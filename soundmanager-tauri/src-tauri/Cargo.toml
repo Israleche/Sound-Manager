@@ -1,6 +1,6 @@
 [package]
 name = "sound-manager"
-version = "4.0.0-dev"
+version = "4.0.0"
 description = "Modern Tauri v2 rewrite of ORelio/Sound-Manager. Manage and share Windows sound schemes."
 authors = ["Israleche <israleche@gmail.com>"]
 license = "CDDL-1.0"

@@ -1,6 +1,6 @@
 {
   "name": "sound-manager",
-  "version": "4.0.0-dev",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "description": "Modern Tauri v2 + TypeScript rewrite of ORelio/Sound-Manager. Manage and share Windows sound schemes. CDDL-1.0.",
