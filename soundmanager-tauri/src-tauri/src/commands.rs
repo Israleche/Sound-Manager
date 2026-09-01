@@ -319,6 +319,62 @@ pub fn restore_startup_sound() -> Result<(), String> {
     core::platform::imageres::restore().map_err(|e| err_to_string(e.into()))
 }
 
+// ---------------------------------------------------------------- Catalog (MyInstants) + GitHub schemes
+
+#[tauri::command]
+pub async fn search_catalog(query: String) -> Result<Vec<core::catalog::CatalogSound>, String> {
+    core::catalog::search_myinstants(&query).await.map_err(|e| err_to_string(e.into()))
+}
+
+#[tauri::command]
+pub async fn assign_catalog_sound(url: String, event_internal: String, _title: String) -> Result<(), String> {
+    let ev = event_by_name(&event_internal).ok_or("unknown event".to_string())?;
+    let tmp = core::catalog::download_to_temp(&url).await.map_err(|e| err_to_string(e.into()))?;
+    let media = core::domain::scheme_meta::media_dir();
+    std::fs::create_dir_all(&media).map_err(|e| err_to_string(e.into()))?;
+    let dest = ev.file_path(&media);
+    // Transcode if needed (non-WAV mp3 → wav)
+    if core::audio::convert::is_wav(&tmp) {
+        std::fs::copy(&tmp, &dest).map_err(|e| err_to_string(e.into()))?;
+    } else {
+        let wav = core::audio::convert::to_wav(&tmp).map_err(|e| err_to_string(e.into()))?;
+        std::fs::write(&dest, wav).map_err(|e| err_to_string(e.into()))?;
+    }
+    let _ = std::fs::remove_file(&tmp);
+    let s = Settings::load_or_default();
+    core::platform::registry_scheme::setup(&s, &media, false).map_err(|e| err_to_string(e.into()))?;
+    if ev.event_type == Some(core::domain::sound_event::EventType::Startup)
+        && s.patch_startup_sound
+        && core::platform::imageres::is_patching_possible()
+        && core::platform::fs_admin::is_admin()
+    {
+        core::platform::imageres::patch(Some(&dest)).map_err(|e| err_to_string(e.into()))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn search_github_schemes(query: Option<String>) -> Result<Vec<core::downloader::GithubScheme>, String> {
+    core::downloader::search_schemes(query.as_deref()).await.map_err(|e| err_to_string(e.into()))
+}
+
+#[tauri::command]
+pub async fn download_github_scheme(download_url: String, file_name: String) -> Result<String, String> {
+    let dest = core::downloader::download_scheme(&download_url, &file_name).await.map_err(|e| err_to_string(e.into()))?;
+    // Auto-import if it's a .ths
+    if dest.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case("ths")).unwrap_or(false) {
+        let media = core::domain::scheme_meta::media_dir();
+        core::archive::ths::import(&dest, &media).map_err(|e| err_to_string(e.into()))?;
+        let s = Settings::load_or_default();
+        core::platform::registry_scheme::setup(&s, &media, false).map_err(|e| err_to_string(e.into()))?;
+        core::platform::registry_scheme::apply(
+            core::platform::registry_scheme::SCHEME_MANAGER,
+            s.missing_sound_use_default,
+        ).map_err(|e| err_to_string(e.into()))?;
+    }
+    Ok(dest.to_string_lossy().into_owned())
+}
+
 // ---------------------------------------------------------------- i18n / misc
 
 #[derive(Serialize)]

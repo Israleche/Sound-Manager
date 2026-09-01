@@ -1,27 +1,23 @@
 /**
- * Sound Manager frontend entrypoint: boot, i18n, view switching, scheme view,
- * settings view, import/export. Vanilla TS + DOM, no framework.
+ * Sound Manager frontend — compact table view, native dialogs, catalog, downloader.
  */
+import { invoke } from "@tauri-apps/api/core";
+import { open as dialogOpen, save as dialogSave } from "@tauri-apps/plugin-dialog";
 import { ipc } from "./app/ipc";
 import { loadLanguage, apply, t, type Lang } from "./app/i18n";
 
-type ViewKey = "scheme" | "downloader" | "settings" | "about";
-
+type ViewKey = "scheme" | "catalog" | "downloader" | "settings" | "about";
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const el = document.querySelector<T>(sel);
-  if (!el) throw new Error(`missing element: ${sel}`);
+  if (!el) throw new Error(`missing: ${sel}`);
   return el;
 };
-
 function toast(msg: string, ms = 2600): void {
   const el = $("#toast");
   el.textContent = msg;
   el.hidden = false;
   window.setTimeout(() => (el.hidden = true), ms);
 }
-
-// ------------------------------------------------- Navigation
-
 function switchView(view: ViewKey): void {
   document.querySelectorAll<HTMLElement>(".view").forEach((v) => v.classList.remove("active"));
   $(`#view-${view}`).classList.add("active");
@@ -29,40 +25,42 @@ function switchView(view: ViewKey): void {
     b.classList.toggle("active", (b as HTMLElement).dataset.view === view)
   );
 }
-
 $("#nav").addEventListener("click", (e) => {
   const btn = (e.target as HTMLElement).closest<HTMLElement>(".nav-btn");
   if (btn?.dataset.view) switchView(btn.dataset.view as ViewKey);
 });
 
-// ------------------------------------------------- Scheme view
-
+// ── Scheme (compact table) ──
 async function refreshEvents(): Promise<void> {
   const events = await ipc.getSoundEvents();
-  const grid = $("#event-grid");
-  grid.replaceChildren();
+  const rows = $("#event-rows");
+  rows.replaceChildren();
   for (const ev of events) {
-    const card = document.createElement("div");
-    card.className = `event-card${ev.disabled ? " disabled" : ""}`;
-    card.dataset.event = ev.internal_name;
+    const row = document.createElement("div");
+    row.className = `event-row${ev.disabled ? " disabled" : ""}`;
+    row.dataset.event = ev.internal_name;
 
-    const info = document.createElement("div");
-    info.className = "event-info";
+    const icon = document.createElement("div");
+    icon.className = "ev-icon";
+    icon.textContent = "♪";
+
+    const nameCol = document.createElement("div");
     const name = document.createElement("div");
-    name.className = "event-name";
+    name.className = "ev-name";
     name.textContent = ev.display_name;
     const desc = document.createElement("div");
-    desc.className = "event-desc";
+    desc.className = "ev-desc";
     desc.textContent = ev.description;
+    nameCol.append(name, desc);
+
     const file = document.createElement("div");
-    file.className = `event-file${ev.has_file ? "" : " missing"}`;
+    file.className = `ev-file${ev.has_file ? "" : " missing"}`;
     file.textContent = ev.file_name ?? t("no_image");
-    info.append(name, desc, file);
+    file.title = ev.file_name ?? "";
 
     const actions = document.createElement("div");
-    actions.className = "event-actions";
-
-    const mkBtn = (label: string, title: string, onClick: () => void): HTMLButtonElement => {
+    actions.className = "ev-actions";
+    const mk = (label: string, title: string, onClick: () => void): HTMLButtonElement => {
       const b = document.createElement("button");
       b.className = "icon-btn";
       b.textContent = label;
@@ -70,59 +68,28 @@ async function refreshEvents(): Promise<void> {
       b.addEventListener("click", onClick);
       return b;
     };
-
     actions.append(
-      mkBtn("▶", t("button_play"), async () => {
-        try {
-          await ipc.playSoundEvent(ev.internal_name);
-        } catch (e) {
-          toast(String(e));
-        }
+      mk("▶", t("button_play"), async () => { try { await ipc.playSoundEvent(ev.internal_name); } catch (e) { toast(String(e)); } }),
+      mk("…", t("button_open"), async () => {
+        const path = await dialogOpen({ filters: [{ name: "Audio", extensions: ["wav", "mp3", "ogg", "flac", "m4a"] }] });
+        if (!path) return;
+        const p = Array.isArray(path) ? path[0] : path as string;
+        try { await ipc.updateSoundFile(ev.internal_name, p); await refreshEvents(); } catch (e) { toast(String(e)); }
       }),
-      mkBtn("📄", t("button_open"), async () => {
-        const input = document.createElement("input");
-        input.type = "file";
-        input.accept = ".wav,.mp3,.ogg,.flac,.m4a,audio/*";
-        input.addEventListener("change", async () => {
-          const f = input.files?.[0];
-          if (!f) return;
-          try {
-            // Tauri fs scope: pass the path we got from the file dialog plugin
-            const path = (f as File & { path?: string }).path ?? f.name;
-            await ipc.updateSoundFile(ev.internal_name, path);
-            await refreshEvents();
-          } catch (e) {
-            toast(String(e));
-          }
-        });
-        input.click();
-      }),
-      mkBtn("↺", t("button_reset"), async () => {
-        try {
-          await ipc.removeSoundFile(ev.internal_name);
-          await refreshEvents();
-        } catch (e) {
-          toast(String(e));
-        }
-      })
+      mk("↺", t("button_reset"), async () => { try { await ipc.removeSoundFile(ev.internal_name); await refreshEvents(); } catch (e) { toast(String(e)); } })
     );
 
     const toggle = document.createElement("input");
     toggle.type = "checkbox";
+    toggle.className = "ev-toggle";
     toggle.checked = !ev.disabled;
     toggle.title = t("button_enable");
     toggle.addEventListener("change", async () => {
-      try {
-        await ipc.setEventDisabled(ev.internal_name, !toggle.checked);
-        await refreshEvents();
-      } catch (e) {
-        toast(String(e));
-      }
+      try { await ipc.setEventDisabled(ev.internal_name, !toggle.checked); await refreshEvents(); } catch (e) { toast(String(e)); }
     });
-    actions.append(toggle);
 
-    card.append(info, actions);
-    grid.append(card);
+    row.append(icon, nameCol, file, actions, toggle);
+    rows.append(row);
   }
 }
 
@@ -134,89 +101,46 @@ async function refreshMeta(): Promise<void> {
   const thumb = $("#scheme-thumb") as HTMLImageElement;
   thumb.src = meta.thumbnail_base64 ? `data:image/png;base64,${meta.thumbnail_base64}` : "data:,";
 }
-
 async function saveMeta(): Promise<void> {
-  await ipc.setSchemeMeta({
+  await invoke("set_scheme_meta", { meta: {
     name: ($("#meta-name") as HTMLInputElement).value,
     author: ($("#meta-author") as HTMLInputElement).value,
     about: ($("#meta-about") as HTMLInputElement).value,
-    thumbnail_base64: currentThumbB64,
-  });
+    thumbnail_base64: currentThumbB64 || (await ipc.getSchemeMeta()).thumbnail_base64,
+  }});
 }
-
 let currentThumbB64 = "";
-
-$("#meta-name").addEventListener("change", () => saveMeta().catch(toast));
-$("#meta-author").addEventListener("change", () => saveMeta().catch(toast));
-$("#meta-about").addEventListener("change", () => saveMeta().catch(toast));
-
+$("#meta-name").addEventListener("change", () => saveMeta().catch((e) => toast(String(e))));
+$("#meta-author").addEventListener("change", () => saveMeta().catch((e) => toast(String(e))));
+$("#meta-about").addEventListener("change", () => saveMeta().catch((e) => toast(String(e))));
 $("#thumb-file").addEventListener("change", async () => {
   const file = ($("#thumb-file") as HTMLInputElement).files?.[0];
   if (!file) return;
   const buf = await file.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let binary = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   currentThumbB64 = btoa(binary);
-  await saveMeta();
-  await refreshMeta();
+  try { await saveMeta(); await refreshMeta(); } catch (e) { toast(String(e)); }
 });
 
-// ------------------------------------------------- Import / export / reset
-
+// Import / export / reset (native dialogs)
 $("#btn-import").addEventListener("click", async () => {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".ths,.soundpack,.theme,.zip";
-  input.addEventListener("change", async () => {
-    const f = input.files?.[0];
-    if (!f) return;
-    try {
-      const path = (f as File & { path?: string }).path ?? f.name;
-      await ipc.importArchive(path);
-      await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
-      toast(t("import_done"));
-    } catch (e) {
-      toast(String(e));
-    }
-  });
-  input.click();
+  const path = await dialogOpen({ filters: [{ name: "Sound scheme", extensions: ["ths", "soundpack", "zip"] }] });
+  if (!path) return;
+  const p = Array.isArray(path) ? path[0] : path as string;
+  try { await ipc.importArchive(p); await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]); toast(t("import_done")); } catch (e) { toast(String(e)); }
 });
-
 $("#btn-export").addEventListener("click", async () => {
-  const input = document.createElement("input");
-  input.type = "file";
-  // nwsaveas: non-standard but supported in Chromium-based save pickers
-  input.setAttribute("nwsaveas", "MyScheme.ths");
-  input.accept = ".ths";
-  input.addEventListener("change", async () => {
-    const f = input.files?.[0];
-    if (!f) return;
-    try {
-      const path = (f as File & { path?: string }).path ?? f.name;
-      await ipc.exportArchive(path);
-      toast(t("export_done"));
-    } catch (e) {
-      toast(String(e));
-    }
-  });
-  input.click();
+  const path = await dialogSave({ defaultPath: "MyScheme.ths", filters: [{ name: "Sound scheme", extensions: ["ths"] }] });
+  if (!path) return;
+  try { await ipc.exportArchive(path); toast(t("export_done")); } catch (e) { toast(String(e)); }
 });
-
 $("#btn-reset").addEventListener("click", async () => {
-  try {
-    await ipc.setupSchemeManager(true);
-    await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
-    toast(t("reset_done"));
-  } catch (e) {
-    toast(String(e));
-  }
+  try { await ipc.setupSchemeManager(true); await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]); toast(t("reset_done")); } catch (e) { toast(String(e)); }
 });
 
-// ------------------------------------------------- Scheme list (sidebar)
-
+// ── Scheme list (sidebar) ──
 async function refreshSchemeList(): Promise<void> {
   const [schemes, active] = await Promise.all([ipc.getSchemeList(), ipc.getActiveScheme()]);
   const sel = $("#scheme-select") as HTMLSelectElement;
@@ -229,20 +153,16 @@ async function refreshSchemeList(): Promise<void> {
     sel.append(opt);
   }
 }
-
 $("#scheme-select").addEventListener("change", async (e) => {
   const sel = e.target as HTMLSelectElement;
   try {
     const settings = await ipc.getSettings();
     await ipc.applyScheme(sel.value, settings.missing_sound_use_default);
     toast(t("scheme_applied"));
-  } catch (err) {
-    toast(String(err));
-  }
+  } catch (err) { toast(String(err)); }
 });
 
-// ------------------------------------------------- Settings view
-
+// ── Settings ──
 async function loadSettingsView(): Promise<void> {
   const s = await ipc.getSettings();
   ($("#set-patch") as HTMLInputElement).checked = s.patch_startup_sound;
@@ -252,7 +172,6 @@ async function loadSettingsView(): Promise<void> {
   ($("#set-listview") as HTMLInputElement).checked = s.scheme_items_list_view;
   ($("#set-lang") as HTMLSelectElement).value = s.language;
 }
-
 $("#btn-save-settings").addEventListener("click", async () => {
   const s = await ipc.getSettings();
   const patchWasOn = s.patch_startup_sound;
@@ -267,47 +186,127 @@ $("#btn-save-settings").addEventListener("click", async () => {
     language: ($("#set-lang") as HTMLSelectElement).value,
   };
   try {
-    // imageres patching requires admin: attempt, but never silently swallow failure
-    if (patchNow && !patchWasOn) {
-      await ipc.patchStartupSound(true);
-    } else if (!patchNow && patchWasOn) {
-      await ipc.restoreStartupSound();
-    }
+    if (patchNow && !patchWasOn) await ipc.patchStartupSound(true);
+    else if (!patchNow && patchWasOn) await ipc.restoreStartupSound();
     await ipc.saveSettings(next);
     document.body.classList.toggle("listview", next.scheme_items_list_view);
     await loadLanguage(next.language as Lang);
     toast(t("settings_saved"));
-  } catch (e) {
-    toast(String(e));
-    await loadSettingsView();
-  }
+  } catch (e) { toast(String(e)); await loadSettingsView(); }
 });
 
-// ------------------------------------------------- About
+// ── Catalog (MyInstants) ──
+const previewAudio = $("#preview-audio") as HTMLAudioElement;
+let catalogResults: Array<{ title: string; url: string; page_url: string }> = [];
 
-$("#link-repo").addEventListener("click", (e) => {
-  e.preventDefault();
-  window.open("https://github.com/Israleche/Sound-Manager", "_blank");
-});
+async function doCatalogSearch(): Promise<void> {
+  const q = ($("#catalog-query") as HTMLInputElement).value.trim();
+  if (!q) return;
+  const status = $("#catalog-status");
+  const grid = $("#catalog-grid");
+  status.textContent = t("catalog_searching") ?? "Searching…";
+  grid.replaceChildren();
+  try {
+    catalogResults = await invoke<Array<{ title: string; url: string; page_url: string }>>("search_catalog", { query: q });
+    if (catalogResults.length === 0) status.textContent = t("catalog_no_results") ?? "No results.";
+    else status.textContent = `${catalogResults.length} results`;
+    const events = await ipc.getSoundEvents();
+    for (const r of catalogResults) {
+      const card = document.createElement("div");
+      card.className = "catalog-card";
+      const title = document.createElement("div");
+      title.className = "catalog-card-title";
+      title.textContent = r.title;
+      title.title = r.title;
+      const actions = document.createElement("div");
+      actions.className = "catalog-card-actions";
+      const play = document.createElement("button");
+      play.className = "btn small";
+      play.textContent = "▶";
+      play.title = "Preview";
+      play.addEventListener("click", () => { previewAudio.src = r.url; previewAudio.play().catch(() => {}); });
+      const sel = document.createElement("select");
+      sel.className = "btn small";
+      sel.style.flex = "1";
+      const ph = document.createElement("option");
+      ph.textContent = t("catalog_assign") ?? "Assign to…";
+      ph.disabled = true; ph.selected = true;
+      sel.append(ph);
+      for (const ev of events) {
+        const o = document.createElement("option");
+        o.value = ev.internal_name;
+        o.textContent = ev.display_name;
+        sel.append(o);
+      }
+      sel.addEventListener("change", async () => {
+        const ev = sel.value;
+        sel.disabled = true;
+        try {
+          await invoke("assign_catalog_sound", { url: r.url, eventInternal: ev, title: r.title });
+          await refreshEvents();
+          toast(`${r.title} → ${ev}`);
+        } catch (e) { toast(String(e)); }
+        sel.disabled = false;
+        sel.selectedIndex = 0;
+      });
+      actions.append(play, sel);
+      card.append(title, actions);
+      grid.append(card);
+    }
+  } catch (e) { status.textContent = String(e); }
+}
+$("#catalog-search-btn").addEventListener("click", doCatalogSearch);
+$("#catalog-query").addEventListener("keydown", (e) => { if (e.key === "Enter") doCatalogSearch(); });
 
-// ------------------------------------------------- Boot
+// ── GitHub downloader ──
+async function doGhSearch(): Promise<void> {
+  const q = ($("#gh-search") as HTMLInputElement).value.trim();
+  const status = $("#gh-status");
+  const list = $("#schemes-list");
+  status.textContent = "Searching…";
+  list.replaceChildren();
+  try {
+    const schemes = await invoke<Array<{ name: string; download_url: string; size: number }>>("search_github_schemes", { query: q || undefined });
+    if (schemes.length === 0) status.textContent = "No schemes found.";
+    else status.textContent = `${schemes.length} schemes`;
+    for (const s of schemes) {
+      const card = document.createElement("div");
+      card.className = "catalog-card";
+      const t2 = document.createElement("div");
+      t2.className = "catalog-card-title";
+      t2.textContent = s.name;
+      const btn = document.createElement("button");
+      btn.className = "btn small primary";
+      btn.textContent = t("button_import");
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try {
+          await invoke("download_github_scheme", { downloadUrl: s.download_url, fileName: s.name });
+          await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
+          toast(t("import_done"));
+        } catch (e) { toast(String(e)); }
+        btn.disabled = false;
+      });
+      card.append(t2, btn);
+      list.append(card);
+    }
+  } catch (e) { status.textContent = String(e); }
+}
+$("#gh-search-btn").addEventListener("click", doGhSearch);
+$("#gh-search").addEventListener("keydown", (e) => { if (e.key === "Enter") doGhSearch(); });
 
+// ── About ──
+$("#link-repo").addEventListener("click", (e) => { e.preventDefault(); window.open("https://github.com/Israleche/Sound-Manager", "_blank"); });
+
+// ── Boot ──
 async function boot(): Promise<void> {
   const info = await ipc.getAppInfo();
   $("#about-version").textContent = `Sound Manager ${info.version} — ${info.windows_friendly}`;
   await loadLanguage(info.language as Lang);
   await loadSettingsView();
   document.body.classList.toggle("listview", ($("#set-listview") as HTMLInputElement).checked);
-  try {
-    await ipc.setupSchemeManager(false);
-  } catch {
-    // first run may fail without media dir; setupSchemeManager(true) from UI handles it
-  }
+  try { await ipc.setupSchemeManager(false); } catch { /* first run */ }
   await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
   apply();
 }
-
-boot().catch((e) => {
-  console.error(e);
-  toast(String(e), 8000);
-});
+boot().catch((e) => { console.error(e); toast(String(e), 8000); });

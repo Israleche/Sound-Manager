@@ -5,6 +5,8 @@ pub mod domain;
 pub mod platform;
 pub mod archive;
 pub mod audio;
+pub mod catalog;
+pub mod downloader;
 pub mod errors;
 
 pub use errors::{CoreError, CoreResult};

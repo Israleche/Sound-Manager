@@ -32,6 +32,10 @@ pub fn run() {
             commands::get_patching_flags,
             commands::patch_startup_sound,
             commands::restore_startup_sound,
+            commands::search_catalog,
+            commands::assign_catalog_sound,
+            commands::search_github_schemes,
+            commands::download_github_scheme,
             commands::get_locale,
             commands::quit_app,
         ])

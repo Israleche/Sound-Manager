@@ -11,47 +11,75 @@
   <div id="app">
     <aside id="sidebar">
       <div class="brand">
-        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
         <span data-i18n="app_name">Sound Manager</span>
       </div>
       <nav id="nav">
         <button class="nav-btn active" data-view="scheme" data-i18n="nav_scheme">Scheme</button>
-        <button class="nav-btn" data-view="downloader" data-i18n="nav_downloader">Get schemes</button>
+        <button class="nav-btn" data-view="catalog" data-i18n="nav_catalog">Sounds</button>
+        <button class="nav-btn" data-view="downloader" data-i18n="nav_downloader">Schemes</button>
         <button class="nav-btn" data-view="settings" data-i18n="nav_settings">Settings</button>
         <button class="nav-btn" data-view="about" data-i18n="nav_about">About</button>
       </nav>
       <div class="scheme-picker">
+        <label data-i18n="nav_scheme">Scheme</label>
         <select id="scheme-select" aria-label="Active scheme"></select>
       </div>
     </aside>
     <main id="main">
       <section id="view-scheme" class="view active">
-        <header class="view-head">
-          <div id="scheme-card" class="scheme-card">
-            <img id="scheme-thumb" alt="" src="data:," />
-            <div class="scheme-meta">
-              <input id="meta-name" class="meta-input title" placeholder="Name" />
-              <input id="meta-author" class="meta-input" placeholder="Author" />
-              <input id="meta-about" class="meta-input" placeholder="About" />
-            </div>
-            <label class="thumb-btn">
-              <span data-i18n="button_thumbnail">Image</span>
-              <input id="thumb-file" type="file" accept="image/*" hidden />
-            </label>
+        <div id="scheme-card" class="scheme-card">
+          <img id="scheme-thumb" alt="" src="data:," />
+          <div class="scheme-meta">
+            <input id="meta-name" class="meta-input title" placeholder="Name" />
+            <input id="meta-author" class="meta-input" placeholder="Author" />
+            <input id="meta-about" class="meta-input" placeholder="About" />
           </div>
-          <div class="actions">
-            <button id="btn-import" class="btn primary" data-i18n="button_import">Import</button>
-            <button id="btn-export" class="btn" data-i18n="button_export">Export</button>
-            <button id="btn-reset" class="btn danger" data-i18n="button_reset">Reset</button>
+          <label class="thumb-btn">
+            <span data-i18n="button_thumbnail">Image</span>
+            <input id="thumb-file" type="file" accept="image/*" hidden />
+          </label>
+        </div>
+        <div class="actions">
+          <button id="btn-import" class="btn primary" data-i18n="button_import">Import</button>
+          <button id="btn-export" class="btn" data-i18n="button_export">Export</button>
+          <button id="btn-reset" class="btn danger" data-i18n="button_reset">Reset</button>
+        </div>
+        <div class="event-table" id="event-table">
+          <div class="event-table-head">
+            <span></span>
+            <span data-i18n="col_event">Event</span>
+            <span data-i18n="col_file">File</span>
+            <span data-i18n="col_actions">Actions</span>
+            <span data-i18n="col_on">On</span>
           </div>
-        </header>
-        <div id="event-grid" class="event-grid"></div>
+          <div id="event-rows"></div>
+        </div>
+        <div id="event-grid" class="event-grid" hidden></div>
       </section>
+
+      <section id="view-catalog" class="view">
+        <h2 data-i18n="nav_catalog">Sound Catalog</h2>
+        <p class="muted" style="margin-bottom:8px" data-i18n="catalog_hint">Search MyInstants — preview and assign to any Windows event.</p>
+        <div class="catalog-search">
+          <input id="catalog-query" type="search" placeholder="Search sounds — e.g. windows, error, notify" />
+          <button id="catalog-search-btn" class="btn primary" data-i18n="button_search">Search</button>
+        </div>
+        <div id="catalog-status" class="muted"></div>
+        <div id="catalog-grid" class="catalog-grid"></div>
+      </section>
+
       <section id="view-downloader" class="view">
-        <h2 data-i18n="nav_downloader">Get schemes</h2>
+        <h2 data-i18n="nav_downloader">Schemes</h2>
         <p class="muted" data-i18n="downloader_todo">Browse community sound schemes from GitHub.</p>
-        <div id="schemes-list"></div>
+        <div class="catalog-search">
+          <input id="gh-search" type="search" placeholder="Search GitHub schemes" />
+          <button id="gh-search-btn" class="btn" data-i18n="button_search">Search</button>
+        </div>
+        <div id="gh-status" class="muted"></div>
+        <div id="schemes-list" class="catalog-grid"></div>
       </section>
+
       <section id="view-settings" class="view">
         <h2 data-i18n="nav_settings">Settings</h2>
         <div class="settings-group">
@@ -70,18 +98,18 @@
         </div>
         <button id="btn-save-settings" class="btn primary" data-i18n="button_save">Save</button>
       </section>
+
       <section id="view-about" class="view">
         <h2 data-i18n="nav_about">About</h2>
         <p id="about-version" class="muted"></p>
         <p data-i18n="about_desc">Manage and share Windows sound schemes.</p>
-        <p class="muted" data-i18n="about_license">
-          Based on ORelio/Sound-Manager v3.5.0 — CDDL-1.0. Modifications by Israleche (2026).
-        </p>
-        <a href="#" id="link-repo" class="btn">GitHub</a>
+        <p class="muted" data-i18n="about_license">Based on ORelio/Sound-Manager v3.5.0 — CDDL-1.0. Modifications by Israleche (2026).</p>
+        <a href="#" id="link-repo" class="btn small">GitHub</a>
       </section>
     </main>
   </div>
   <div id="toast" class="toast" hidden></div>
+  <audio id="preview-audio" preload="none"></audio>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>

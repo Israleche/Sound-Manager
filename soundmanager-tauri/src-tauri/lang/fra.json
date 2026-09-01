@@ -102,5 +102,15 @@
   "event_select_name": "Sélection",
   "event_select_desc": "Élément de menu sélectionné",
   "event_loadscheme_name": "Thème chargé",
-  "event_loadscheme_desc": "Joué au chargement d'un thème sonore"
+  "event_loadscheme_desc": "Joué au chargement d'un thème sonore",
+  "nav_catalog": "Sons",
+  "col_event": "Événement",
+  "col_file": "Fichier",
+  "col_actions": "Actions",
+  "col_on": "On",
+  "button_search": "Rechercher",
+  "catalog_hint": "Recherchez sur MyInstants — prévisualisez et assignez à un événement Windows.",
+  "catalog_searching": "Recherche…",
+  "catalog_no_results": "Aucun résultat.",
+  "catalog_assign": "Assigner à…"
 }

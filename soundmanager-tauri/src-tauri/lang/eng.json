@@ -102,5 +102,15 @@
   "event_select_name": "Select",
   "event_select_desc": "Menu item selected",
   "event_loadscheme_name": "Scheme loaded",
-  "event_loadscheme_desc": "Played when loading a sound scheme"
+  "event_loadscheme_desc": "Played when loading a sound scheme",
+  "nav_catalog": "Sounds",
+  "col_event": "Event",
+  "col_file": "File",
+  "col_actions": "Actions",
+  "col_on": "On",
+  "button_search": "Search",
+  "catalog_hint": "Search MyInstants — preview and assign to any Windows event.",
+  "catalog_searching": "Searching…",
+  "catalog_no_results": "No results.",
+  "catalog_assign": "Assign to…"
 }
