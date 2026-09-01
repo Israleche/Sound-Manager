@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "Sound Manager",
+  "version": "4.0.0-dev",
+  "identifier": "net.israleche.soundmanager",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "title": "Sound Manager",
+        "label": "main",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 880,
+        "minHeight": 560,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "decorations": true,
+        "transparent": false,
+        "shadow": true,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost https://api.github.com https://objects.githubusercontent.com https://github.com"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "lang/*"
+    ],
+    "category": "Utility",
+    "shortDescription": "Manage and share Windows sound schemes",
+    "longDescription": "Sound Manager makes it easy to create, edit and share Windows sound schemes. Modern Tauri + TypeScript rewrite of ORelio/Sound-Manager.",
+    "publisher": "Israleche",
+    "homepage": "https://github.com/Israleche/Sound-Manager",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    }
+  },
+  "plugins": {
+    "fs": {
+      "scope": {
+        "allow": [
+          "$APPDATA/SoundManager/**",
+          "$DOCUMENT/**",
+          "$DOWNLOAD/**",
+          "$DESKTOP/**",
+          "$HOME/**"
+        ]
+      }
+    }
+  }
+}

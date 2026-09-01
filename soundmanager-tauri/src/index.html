@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Sound Manager</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        <span data-i18n="app_name">Sound Manager</span>
+      </div>
+      <nav id="nav">
+        <button class="nav-btn active" data-view="scheme" data-i18n="nav_scheme">Scheme</button>
+        <button class="nav-btn" data-view="downloader" data-i18n="nav_downloader">Get schemes</button>
+        <button class="nav-btn" data-view="settings" data-i18n="nav_settings">Settings</button>
+        <button class="nav-btn" data-view="about" data-i18n="nav_about">About</button>
+      </nav>
+      <div class="scheme-picker">
+        <select id="scheme-select" aria-label="Active scheme"></select>
+      </div>
+    </aside>
+    <main id="main">
+      <section id="view-scheme" class="view active">
+        <header class="view-head">
+          <div id="scheme-card" class="scheme-card">
+            <img id="scheme-thumb" alt="" src="data:," />
+            <div class="scheme-meta">
+              <input id="meta-name" class="meta-input title" placeholder="Name" />
+              <input id="meta-author" class="meta-input" placeholder="Author" />
+              <input id="meta-about" class="meta-input" placeholder="About" />
+            </div>
+            <label class="thumb-btn">
+              <span data-i18n="button_thumbnail">Image</span>
+              <input id="thumb-file" type="file" accept="image/*" hidden />
+            </label>
+          </div>
+          <div class="actions">
+            <button id="btn-import" class="btn primary" data-i18n="button_import">Import</button>
+            <button id="btn-export" class="btn" data-i18n="button_export">Export</button>
+            <button id="btn-reset" class="btn danger" data-i18n="button_reset">Reset</button>
+          </div>
+        </header>
+        <div id="event-grid" class="event-grid"></div>
+      </section>
+      <section id="view-downloader" class="view">
+        <h2 data-i18n="nav_downloader">Get schemes</h2>
+        <p class="muted" data-i18n="downloader_todo">Browse community sound schemes from GitHub.</p>
+        <div id="schemes-list"></div>
+      </section>
+      <section id="view-settings" class="view">
+        <h2 data-i18n="nav_settings">Settings</h2>
+        <div class="settings-group">
+          <label class="setting"><input type="checkbox" id="set-patch" /> <span data-i18n="setting_patch">Patch startup sound (imageres.dll, admin required)</span></label>
+          <label class="setting"><input type="checkbox" id="set-default-missing" /> <span data-i18n="setting_missing_default">Use default system sound when missing</span></label>
+          <label class="setting"><input type="checkbox" id="set-convert" /> <span data-i18n="setting_convert">Convert .soundpack files to .ths on import</span></label>
+          <label class="setting"><input type="checkbox" id="set-prefer-startup" /> <span data-i18n="setting_prefer_startup">Prefer Startup/Shutdown over Logon/Logoff</span></label>
+          <label class="setting"><input type="checkbox" id="set-listview" /> <span data-i18n="setting_listview">List view (accessibility)</span></label>
+          <label class="setting">
+            <span data-i18n="setting_language">Language</span>
+            <select id="set-lang">
+              <option value="eng">English</option>
+              <option value="fra">Français</option>
+            </select>
+          </label>
+        </div>
+        <button id="btn-save-settings" class="btn primary" data-i18n="button_save">Save</button>
+      </section>
+      <section id="view-about" class="view">
+        <h2 data-i18n="nav_about">About</h2>
+        <p id="about-version" class="muted"></p>
+        <p data-i18n="about_desc">Manage and share Windows sound schemes.</p>
+        <p class="muted" data-i18n="about_license">
+          Based on ORelio/Sound-Manager v3.5.0 — CDDL-1.0. Modifications by Israleche (2026).
+        </p>
+        <a href="#" id="link-repo" class="btn">GitHub</a>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

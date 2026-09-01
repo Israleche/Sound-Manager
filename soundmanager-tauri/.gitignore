@@ -1,0 +1,35 @@
+# Build output
+node_modules/
+dist/
+target/
+
+# Tauri build outputs
+src-tauri/target/
+src-tauri/gen/
+
+# Sidecar build outputs
+sidecars/*/target/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Temp
+tmp/
+temp/

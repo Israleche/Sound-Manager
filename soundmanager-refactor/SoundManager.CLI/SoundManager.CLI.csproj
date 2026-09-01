@@ -1,0 +1,86 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>SoundManager</RootNamespace>
+    <AssemblyName>SoundManager.CLI</AssemblyName>
+    <RuntimeIdentifiers>win-x64;win-x86;linux-x64;osx-x64</RuntimeIdentifiers>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AssemblyVersion>3.6.0.0</AssemblyVersion>
+    <FileVersion>3.6.0.0</FileVersion>
+    <InformationVersion>3.6.0.0</InformationVersion>
+    <PackageId>SoundManager.CLI</PackageId>
+    <Title>SoundManager CLI Engine</Title>
+    <Description>Headless engine for SoundManager sound schemes. Exposes JSON over stdout for Tauri/any UI.</Description>
+    <Company>Israleche</Company>
+    <Product>SoundManager</Product>
+    <Copyright>Copyright (c) Israleche 2026</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="Ionic.Zip" Version="1.9.1.8" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+    <PackageReference Include="System.Management" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\soundmanager-src\SoundManager\RuntimeConfig.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\WindowsVersion.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\WindowsParameters.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\Translations.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\INIFile.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\Settings.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SoundEvent.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SoundScheme.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SchemeMeta.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SoundArchive.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SoundArchiveProprietary.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SoundArchiveThemepack.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\ShellFileType.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\FileSystemAdmin.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\FileRecycler.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\IconExtractor.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\ImageresPatcher.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\NativeResource.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\AccountProperties.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\BgSoundPlayer.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\WindowManager.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\Privilege20\Privilege.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\Privilege20\NativeMethods.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\Privilege20\SafeTokenHandle.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\SystemStartupSound.cs" />
+    <Compile Include="..\soundmanager-src\SoundManager\ExceptionLogger.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="CommandRouter.cs" />
+    <Compile Include="Json.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="..\soundmanager-src\SoundManager\SoundManager.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\SoundScheme.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\SoundSchemeProprietary.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\Ionic.Zip.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\NAudio.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\SoundIcons\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="..\soundmanager-src\SoundManager\Lang\*.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

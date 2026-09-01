@@ -1,0 +1,36 @@
+{
+  "name": "sound-manager",
+  "version": "4.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Modern Tauri v2 + TypeScript rewrite of ORelio/Sound-Manager. Manage and share Windows sound schemes. CDDL-1.0.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.4.0",
+    "@tauri-apps/plugin-dialog": "^2.2.0",
+    "@tauri-apps/plugin-fs": "^2.2.0",
+    "@tauri-apps/plugin-opener": "^2.2.0",
+    "@tauri-apps/plugin-shell": "^2.2.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.4.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

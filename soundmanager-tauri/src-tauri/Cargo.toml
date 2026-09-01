@@ -1,0 +1,61 @@
+[package]
+name = "sound-manager"
+version = "4.0.0-dev"
+description = "Modern Tauri v2 rewrite of ORelio/Sound-Manager. Manage and share Windows sound schemes."
+authors = ["Israleche <israleche@gmail.com>"]
+license = "CDDL-1.0"
+repository = "https://github.com/Israleche/Sound-Manager"
+edition = "2021"
+rust-version = "1.75"
+
+[lib]
+name = "sound_manager_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "sound-manager"
+path = "src/main.rs"
+
+[[bin]]
+name = "bg-sound-player"
+path = "src/bin/bg_sound_player.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+sound-manager-core = { path = "../sidecars/bg-sound-player/core" }
+
+# Tauri runtime
+tauri = { version = "2.4", features = [] }
+tauri-plugin-dialog = "2.2"
+tauri-plugin-fs = "2.2"
+tauri-plugin-opener = "2.2"
+tauri-plugin-shell = "2.2"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Windows-specific
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Console",
+] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
