@@ -112,5 +112,13 @@
   "catalog_hint": "Search MyInstants — preview and assign to any Windows event.",
   "catalog_searching": "Searching…",
   "catalog_no_results": "No results.",
-  "catalog_assign": "Assign to…"
+  "catalog_assign": "Assign to…",
+  "setting_fileassoc": "Associate .ths files with Sound Manager",
+  "box_maintenance": "Maintenance",
+  "button_reinstall": "Reinstall integration",
+  "button_uninstall": "Uninstall",
+  "button_config_file": "Open config file",
+  "button_themepack": "Export themepack",
+  "button_help": "Help",
+  "button_website": "Website"
 }

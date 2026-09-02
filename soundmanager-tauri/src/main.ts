@@ -76,7 +76,8 @@ async function refreshEvents(): Promise<void> {
         const p = Array.isArray(path) ? path[0] : path as string;
         try { await ipc.updateSoundFile(ev.internal_name, p); await refreshEvents(); } catch (e) { toast(String(e)); }
       }),
-      mk("↺", t("button_reset"), async () => { try { await ipc.removeSoundFile(ev.internal_name); await refreshEvents(); } catch (e) { toast(String(e)); } })
+      mk("↺", t("button_reset"), async () => { try { await ipc.removeSoundFile(ev.internal_name); await refreshEvents(); } catch (e) { toast(String(e)); } }),
+      mk("📁", "Open folder", async () => { try { await invoke("open_sound_location", { eventInternal: ev.internal_name }); } catch (e) { toast(String(e)); } })
     );
 
     const toggle = document.createElement("input");
@@ -152,6 +153,7 @@ async function refreshSchemeList(): Promise<void> {
     if (active && s.internal_name === active.internal_name) opt.selected = true;
     sel.append(opt);
   }
+  await refreshImportSystemSchemes();
 }
 $("#scheme-select").addEventListener("change", async (e) => {
   const sel = e.target as HTMLSelectElement;
@@ -169,8 +171,33 @@ async function loadSettingsView(): Promise<void> {
   ($("#set-default-missing") as HTMLInputElement).checked = s.missing_sound_use_default;
   ($("#set-convert") as HTMLInputElement).checked = s.convert_proprietary_files;
   ($("#set-prefer-startup") as HTMLInputElement).checked = s.prefer_startup_sound_on_logon;
-  ($("#set-listview") as HTMLInputElement).checked = s.scheme_items_list_view;
   ($("#set-lang") as HTMLSelectElement).value = s.language;
+  try {
+    const assoc = await invoke<boolean>("get_file_association");
+    ($("#set-fileassoc") as HTMLInputElement).checked = assoc;
+  } catch {}
+  try {
+    const info = await invoke<{ friendly_name: string; nt_version: string; supported: boolean }>("get_system_info");
+    const el = document.getElementById("about-system");
+    if (el) el.textContent = `${info.friendly_name} / Windows NT ${info.nt_version} — ${info.supported ? "supported" : "unsupported"}`;
+  } catch {}
+}
+
+async function refreshImportSystemSchemes(): Promise<void> {
+  const sel = document.getElementById("import-system-select") as HTMLSelectElement | null;
+  if (!sel) return;
+  try {
+    const schemes = await ipc.getSchemeList();
+    // keep first option
+    sel.replaceChildren(sel.options[0]);
+    for (const s of schemes) {
+      if (s.internal_name === ".Default" || s.internal_name === "SoundManager") continue;
+      const o = document.createElement("option");
+      o.value = s.internal_name;
+      o.textContent = s.display_name;
+      sel.append(o);
+    }
+  } catch {}
 }
 $("#btn-save-settings").addEventListener("click", async () => {
   const s = await ipc.getSettings();
@@ -182,14 +209,17 @@ $("#btn-save-settings").addEventListener("click", async () => {
     missing_sound_use_default: ($("#set-default-missing") as HTMLInputElement).checked,
     convert_proprietary_files: ($("#set-convert") as HTMLInputElement).checked,
     prefer_startup_sound_on_logon: ($("#set-prefer-startup") as HTMLInputElement).checked,
-    scheme_items_list_view: ($("#set-listview") as HTMLInputElement).checked,
     language: ($("#set-lang") as HTMLSelectElement).value,
   };
   try {
     if (patchNow && !patchWasOn) await ipc.patchStartupSound(true);
     else if (!patchNow && patchWasOn) await ipc.restoreStartupSound();
     await ipc.saveSettings(next);
-    document.body.classList.toggle("listview", next.scheme_items_list_view);
+    // file association (separate, needs no restart)
+    try {
+      const wantAssoc = ($("#set-fileassoc") as HTMLInputElement).checked;
+      await invoke("set_file_association", { associated: wantAssoc });
+    } catch (e) { toast(String(e)); }
     await loadLanguage(next.language as Lang);
     toast(t("settings_saved"));
   } catch (e) { toast(String(e)); await loadSettingsView(); }
@@ -297,6 +327,52 @@ $("#gh-search").addEventListener("keydown", (e) => { if (e.key === "Enter") doGh
 
 // ── About ──
 $("#link-repo").addEventListener("click", (e) => { e.preventDefault(); window.open("https://github.com/Israleche/Sound-Manager", "_blank"); });
+$("#link-help")?.addEventListener("click", (e) => { e.preventDefault(); window.open("https://github.com/Israleche/Sound-Manager#readme", "_blank"); });
+$("#link-website")?.addEventListener("click", (e) => { e.preventDefault(); window.open("https://github.com/ORelio/Sound-Manager", "_blank"); });
+
+// Import system scheme
+document.getElementById("import-system-select")?.addEventListener("change", async (e) => {
+  const sel = e.target as HTMLSelectElement;
+  if (!sel.value) return;
+  try {
+    await invoke("import_system_scheme", { internalName: sel.value });
+    await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
+    toast(t("import_done"));
+  } catch (err) { toast(String(err)); }
+  sel.selectedIndex = 0;
+});
+
+// Maintenance
+document.getElementById("btn-reinstall")?.addEventListener("click", async () => {
+  try { await invoke("reinstall_app"); toast("Reinstall triggered"); } catch (e) { toast(String(e)); }
+});
+document.getElementById("btn-config")?.addEventListener("click", async () => {
+  try { await invoke("reveal_config_file"); } catch (e) { toast(String(e)); }
+});
+document.getElementById("btn-uninstall")?.addEventListener("click", async () => {
+  if (!confirm("Uninstall Sound Manager integration? This removes the scheme and closes the app.")) return;
+  try { await invoke("uninstall_app"); } catch (e) { toast(String(e)); }
+});
+document.getElementById("btn-themepack")?.addEventListener("click", async () => {
+  const path = await dialogSave({ defaultPath: "MyScheme.themepack", filters: [{ name: "Themepack", extensions: ["themepack"] }] });
+  if (!path) return;
+  try { await invoke("export_themepack", { destination: path }); toast(t("export_done")); } catch (e) { toast(String(e)); }
+});
+
+// Drag & drop (import .ths or replace sound)
+document.addEventListener("dragover", (e) => { e.preventDefault(); });
+document.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  const files = (e as DragEvent).dataTransfer?.files;
+  if (!files || files.length === 0) return;
+  // Tauri drag-drop gives file paths via dataTransfer; fallback to File.path
+  const first = files[0] as File & { path?: string };
+  const p = first.path ?? first.name;
+  const ext = p.split(".").pop()?.toLowerCase();
+  if (ext === "ths" || ext === "soundpack" || ext === "zip") {
+    try { await ipc.importArchive(p); await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]); toast(t("import_done")); } catch (err) { toast(String(err)); }
+  }
+});
 
 // ── Boot ──
 async function boot(): Promise<void> {
@@ -304,9 +380,8 @@ async function boot(): Promise<void> {
   $("#about-version").textContent = `Sound Manager ${info.version} — ${info.windows_friendly}`;
   await loadLanguage(info.language as Lang);
   await loadSettingsView();
-  document.body.classList.toggle("listview", ($("#set-listview") as HTMLInputElement).checked);
   try { await ipc.setupSchemeManager(false); } catch { /* first run */ }
-  await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList()]);
+  await Promise.all([refreshEvents(), refreshMeta(), refreshSchemeList(), refreshImportSystemSchemes()]);
   apply();
 }
 boot().catch((e) => { console.error(e); toast(String(e), 8000); });

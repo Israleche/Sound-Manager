@@ -375,6 +375,93 @@ pub async fn download_github_scheme(download_url: String, file_name: String) -> 
     Ok(dest.to_string_lossy().into_owned())
 }
 
+// ---------------------------------------------------------------- File association, system, maintenance, parity
+
+#[derive(Serialize)]
+pub struct SystemInfoDto {
+    pub friendly_name: String,
+    pub nt_version: String,
+    pub supported: bool,
+    pub is_admin: bool,
+}
+
+#[tauri::command]
+pub fn get_system_info() -> Result<SystemInfoDto, String> {
+    let v = core::platform::version::info();
+    let nt = format!("{}.{}", v.major, v.minor);
+    let supported = v.major >= 6; // Vista+ supported; XP dropped in Tauri edition
+    Ok(SystemInfoDto { friendly_name: v.friendly_name, nt_version: nt, supported, is_admin: core::platform::fs_admin::is_admin() })
+}
+
+#[tauri::command]
+pub fn get_file_association() -> Result<bool, String> {
+    core::platform::file_assoc::is_all_associated().map_err(|e| err_to_string(e.into()))
+}
+
+#[tauri::command]
+pub fn set_file_association(associated: bool) -> Result<(), String> {
+    core::platform::file_assoc::set_all_associated(associated).map_err(|e| err_to_string(e.into()))
+}
+
+#[tauri::command]
+pub fn open_sound_location(event_internal: String) -> Result<(), String> {
+    let ev = event_by_name(&event_internal).ok_or("unknown event".to_string())?;
+    let media = core::domain::scheme_meta::media_dir();
+    let path = ev.file_path(&media);
+    let dir = path.parent().unwrap_or(&media);
+    std::process::Command::new("explorer").arg(dir).spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn import_system_scheme(internal_name: String) -> Result<(), String> {
+    let ev_list = ALL_EVENTS;
+    let media = core::domain::scheme_meta::media_dir();
+    std::fs::create_dir_all(&media).map_err(|e| err_to_string(e.into()))?;
+    for ev in ev_list {
+        core::platform::registry_scheme::copy_default(ev, &media, Some(&internal_name)).map_err(|e| err_to_string(e.into()))?;
+    }
+    let s = Settings::load_or_default();
+    core::platform::registry_scheme::setup(&s, &media, false).map_err(|e| err_to_string(e.into()))?;
+    core::platform::registry_scheme::apply(core::platform::registry_scheme::SCHEME_MANAGER, s.missing_sound_use_default).map_err(|e| err_to_string(e.into()))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn export_themepack(destination: String) -> Result<(), String> {
+    core::archive::themepack::export(std::path::Path::new(&destination)).map_err(|e| err_to_string(e.into()))
+}
+
+#[tauri::command]
+pub fn reveal_config_file() -> Result<(), String> {
+    let path = core::domain::settings::settings_file();
+    if path.is_file() {
+        std::process::Command::new("explorer").arg(&path).spawn().map_err(|e| e.to_string())?;
+    } else {
+        // create empty then open
+        let s = Settings::load_or_default();
+        s.save().map_err(|e| err_to_string(e.into()))?;
+        std::process::Command::new("explorer").arg(&path).spawn().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn reinstall_app() -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    std::process::Command::new(&exe).arg("--setup").spawn().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn uninstall_app(app: tauri::AppHandle) -> Result<(), String> {
+    core::platform::registry_scheme::uninstall().map_err(|e| err_to_string(e.into()))?;
+    let media = core::domain::scheme_meta::media_dir();
+    let _ = std::fs::remove_dir_all(&media);
+    app.exit(0);
+    Ok(())
+}
+
 // ---------------------------------------------------------------- i18n / misc
 
 #[derive(Serialize)]

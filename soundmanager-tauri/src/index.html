@@ -44,6 +44,7 @@
           <button id="btn-import" class="btn primary" data-i18n="button_import">Import</button>
           <button id="btn-export" class="btn" data-i18n="button_export">Export</button>
           <button id="btn-reset" class="btn danger" data-i18n="button_reset">Reset</button>
+          <select id="import-system-select" class="btn small" style="max-width:180px"><option value="">Import system scheme…</option></select>
         </div>
         <div class="event-table" id="event-table">
           <div class="event-table-head">
@@ -84,10 +85,11 @@
         <h2 data-i18n="nav_settings">Settings</h2>
         <div class="settings-group">
           <label class="setting"><input type="checkbox" id="set-patch" /> <span data-i18n="setting_patch">Patch startup sound (imageres.dll, admin required)</span></label>
+          <label class="setting"><input type="checkbox" id="set-bgplayer" /> <span>Play shutdown/logoff sounds (background player)</span></label>
+          <label class="setting"><input type="checkbox" id="set-fileassoc" /> <span data-i18n="setting_fileassoc">Associate .ths files with Sound Manager</span></label>
           <label class="setting"><input type="checkbox" id="set-default-missing" /> <span data-i18n="setting_missing_default">Use default system sound when missing</span></label>
           <label class="setting"><input type="checkbox" id="set-convert" /> <span data-i18n="setting_convert">Convert .soundpack files to .ths on import</span></label>
           <label class="setting"><input type="checkbox" id="set-prefer-startup" /> <span data-i18n="setting_prefer_startup">Prefer Startup/Shutdown over Logon/Logoff</span></label>
-          <label class="setting"><input type="checkbox" id="set-listview" /> <span data-i18n="setting_listview">List view (accessibility)</span></label>
           <label class="setting">
             <span data-i18n="setting_language">Language</span>
             <select id="set-lang">
@@ -97,14 +99,26 @@
           </label>
         </div>
         <button id="btn-save-settings" class="btn primary" data-i18n="button_save">Save</button>
+        <h3 style="margin:14px 0 8px;font-size:13px" data-i18n="box_maintenance">Maintenance</h3>
+        <div class="settings-group" style="flex-direction:row;flex-wrap:wrap">
+          <button id="btn-reinstall" class="btn small" data-i18n="button_reinstall">Reinstall integration</button>
+          <button id="btn-config" class="btn small" data-i18n="button_config_file">Open config file</button>
+          <button id="btn-uninstall" class="btn small danger" data-i18n="button_uninstall">Uninstall</button>
+          <button id="btn-themepack" class="btn small" data-i18n="button_themepack">Export themepack</button>
+        </div>
       </section>
 
       <section id="view-about" class="view">
         <h2 data-i18n="nav_about">About</h2>
         <p id="about-version" class="muted"></p>
+        <p id="about-system" class="muted"></p>
         <p data-i18n="about_desc">Manage and share Windows sound schemes.</p>
         <p class="muted" data-i18n="about_license">Based on ORelio/Sound-Manager v3.5.0 — CDDL-1.0. Modifications by Israleche (2026).</p>
-        <a href="#" id="link-repo" class="btn small">GitHub</a>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <a href="#" id="link-repo" class="btn small">GitHub</a>
+          <a href="#" id="link-help" class="btn small" data-i18n="button_help">Help</a>
+          <a href="#" id="link-website" class="btn small" data-i18n="button_website">Website</a>
+        </div>
       </section>
     </main>
   </div>
